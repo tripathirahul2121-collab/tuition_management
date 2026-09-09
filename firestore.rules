@@ -1,0 +1,76 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The current app uses a custom mobile/password login stored in Firestore,
+    // so these rules intentionally remain public for the known app collections.
+    // They block reads/writes to unexpected collections until the app is moved
+    // to Firebase Auth and role-based rules.
+    match /users/{mobile} {
+      allow read, write: if true;
+    }
+
+    match /pending_users/{mobile} {
+      // Generated passwords for new students are stored here first.
+      // The Members screen reads this collection in the Pending tab.
+      allow get, list: if true;
+      allow create, update, delete: if true;
+    }
+
+    match /junk_users/{mobile} {
+      allow read, write: if true;
+    }
+
+    match /updates/{updateId} {
+      allow read, write: if true;
+    }
+
+    match /stars/{starId} {
+      allow read, write: if true;
+    }
+
+    match /teacher_remarks/{remarkId} {
+      allow read, write: if true;
+    }
+
+    match /mcq_tests/{testId} {
+      allow read, write: if true;
+    }
+
+    match /mcq_tests/{testId}/results/{resultId} {
+      allow read, write: if true;
+    }
+
+    match /mcq_tests/{testId}/reopenRequests/{mobile} {
+      allow read, write: if true;
+    }
+
+    match /mcq_test_templates/{templateId} {
+      allow read, write: if true;
+    }
+
+    match /custom_subjects/{classId} {
+      allow read, write: if true;
+    }
+
+    match /feedback_templates/{templateId} {
+      allow read, write: if true;
+    }
+
+    match /fees/{classId} {
+      allow read, write: if true;
+    }
+
+    match /attendance/{classId}/records/{dateId} {
+      allow read, write: if true;
+    }
+
+    match /progress/{classId}/{subject}/{reportId} {
+      allow read, write: if true;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
