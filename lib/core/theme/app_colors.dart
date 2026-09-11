@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_branding.dart';
+
 class AppColors {
   // BRAND COLORS (Client-changeable)
-  static const primary = Color(0xFF3F51B5); // Indigo
-  static const secondary = Color(0xFF5C6BC0);
+  static Color get primary => WhiteLabelConfig.current.primaryColor;
+  static Color get secondary => WhiteLabelConfig.current.secondaryColor;
 
   // BACKGROUNDS
-  static const background = Color(0xFFF5F6FA);
-  static const surface = Colors.white;
+  static Color get background => WhiteLabelConfig.current.backgroundColor;
+  static Color get surface => WhiteLabelConfig.current.surfaceColor;
 
   // TEXT COLORS
-  static const textPrimary = Color(0xFF1C1C1E);
+  static Color get textPrimary => WhiteLabelConfig.current.textColor;
   static const textSecondary = Color(0xFF6E6E73);
 
   // STATUS COLORS

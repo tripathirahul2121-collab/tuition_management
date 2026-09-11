@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/config/app_branding.dart';
 import '../../core/constants/academic_catalog.dart';
+import '../../core/contact/contact_actions.dart';
 
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
@@ -508,31 +511,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
           const SizedBox(height: 10),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: DropdownButtonFormField<String>(
-              initialValue: selectedBatch,
-              decoration: const InputDecoration(labelText: "Batch"),
-              items: AcademicCatalog.batchValues.map((value) {
-                return DropdownMenuItem(
-                  value: value,
-                  child: Text(AcademicCatalog.batchLabel(value)),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    selectedBatch = AcademicCatalog.normalizeBatch(val);
-                    attendanceMap.clear();
-                    _currentStudents = const [];
-                  });
-                }
-              },
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
           //////////////////////////////////////////////////////
           /// MONTH SWITCHER (NOW IN BOTH MODES)
           //////////////////////////////////////////////////////
@@ -762,6 +740,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           studentDirectory[student.mobile] = {
             "name": student.name,
             "mobile": student.mobile,
+            "contactNumber": student.contactNumber,
           };
         }
 
@@ -880,6 +859,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(height: 8),
+                                    _AbsentContactActions(
+                                      contactNumber: item.contactNumber,
+                                      onCall: () => _openCall(item),
+                                      onWhatsApp: () => _openWhatsApp(item),
+                                    ),
                                   ],
                                 ],
                               ),
@@ -922,6 +907,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         _AttendanceStudentRow(
           mobile: entry.key,
           name: student["name"]?.toString() ?? entry.key,
+          contactNumber:
+              student["contactNumber"]?.toString().trim().isNotEmpty == true
+              ? student["contactNumber"].toString()
+              : entry.key,
           present: entry.value == true,
           reason:
               attendanceData["reason_${entry.key}"]?.toString().trim() ?? "",
@@ -966,6 +955,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       byMobile[doc.id] = _AttendanceStudent(
         mobile: doc.id,
         name: name == null || name.isEmpty ? "Unnamed" : name,
+        contactNumber: ContactActions.preferredContactNumber(
+          data,
+          fallback: doc.id,
+        ),
       );
     }
 
@@ -1002,6 +995,33 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           Text("Absent: $absent", style: const TextStyle(color: Colors.red)),
         ],
       ),
+    );
+  }
+
+  Future<void> _openCall(_AttendanceStudentRow item) async {
+    final uri = ContactActions.callUri(item.contactNumber);
+    if (uri == null || !await launchUrl(uri)) {
+      _showContactError("Could not open phone dialer for ${item.name}.");
+    }
+  }
+
+  Future<void> _openWhatsApp(_AttendanceStudentRow item) async {
+    final message =
+        "Hello, this is ${WhiteLabelConfig.current.instituteName}. "
+        "${item.name} is marked absent today (${DateFormat('dd MMM yyyy').format(selectedDate)}).";
+    final uri = ContactActions.whatsAppUri(
+      rawNumber: item.contactNumber,
+      message: message,
+    );
+    if (uri == null || !await launchUrl(uri, webOnlyWindowName: "_blank")) {
+      _showContactError("Could not open WhatsApp for ${item.name}.");
+    }
+  }
+
+  void _showContactError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -1100,23 +1120,64 @@ class _MonthlyAttendanceDay {
   final String reason;
 }
 
+class _AbsentContactActions extends StatelessWidget {
+  const _AbsentContactActions({
+    required this.contactNumber,
+    required this.onCall,
+    required this.onWhatsApp,
+  });
+
+  final String contactNumber;
+  final VoidCallback onCall;
+  final VoidCallback onWhatsApp;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasContact = contactNumber.trim().isNotEmpty;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        OutlinedButton.icon(
+          onPressed: hasContact ? onCall : null,
+          icon: const Icon(Icons.call, size: 18),
+          label: const Text("Call"),
+        ),
+        OutlinedButton.icon(
+          onPressed: hasContact ? onWhatsApp : null,
+          icon: const Icon(Icons.chat, size: 18),
+          label: const Text("WhatsApp"),
+        ),
+      ],
+    );
+  }
+}
+
 class _AttendanceStudent {
-  const _AttendanceStudent({required this.mobile, required this.name});
+  const _AttendanceStudent({
+    required this.mobile,
+    required this.name,
+    required this.contactNumber,
+  });
 
   final String mobile;
   final String name;
+  final String contactNumber;
 }
 
 class _AttendanceStudentRow {
   const _AttendanceStudentRow({
     required this.mobile,
     required this.name,
+    required this.contactNumber,
     required this.present,
     required this.reason,
   });
 
   final String mobile;
   final String name;
+  final String contactNumber;
   final bool present;
   final String reason;
 }

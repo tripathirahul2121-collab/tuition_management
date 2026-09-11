@@ -1,1 +1,41 @@
-{"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"storage":{"rules":"storage.rules"},"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"tuition-backend","configurations":{"web":"1:526974835612:web:58653b4f1d712801f44659"}},"lib/core/firebase/tuition_firebase_options.dart":{"projectId":"tuition-backend","configurations":{"web":"1:526974835612:web:58653b4f1d712801f44659"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "tuition-backend",
+          "configurations": {
+            "web": "1:526974835612:web:58653b4f1d712801f44659"
+          }
+        },
+        "lib/core/firebase/tuition_firebase_options.dart": {
+          "projectId": "tuition-backend",
+          "configurations": {
+            "web": "1:526974835612:web:58653b4f1d712801f44659"
+          }
+        }
+      }
+    }
+  }
+}

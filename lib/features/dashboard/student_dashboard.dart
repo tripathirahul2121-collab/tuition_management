@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/academic_catalog.dart';
 import '../../core/constants/query_limits.dart';
+import '../../core/config/app_branding.dart';
 import '../../core/services/firestore_query_cache.dart';
+import '../../core/widgets/coaching_qr_dialog.dart';
 import 'mcq_result_utils.dart';
 
 String _formatMcqScore(double value) {
@@ -565,6 +567,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       "student-dashboard-mcq-tests:$className:$batchName",
       () => FirebaseFirestore.instance
           .collection("mcq_tests")
+          .where("class", isEqualTo: className)
           .where("status", isEqualTo: "released")
           .orderBy("scheduledAt", descending: true)
           .limit(QueryLimits.studentDashboardMcqLookup)
@@ -572,11 +575,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       forceRefresh: forceRefresh,
     );
     var classTests = testsSnap.docs
-        .where(
-          (doc) =>
-              AcademicCatalog.mcqTargetClass(doc.data()) == className &&
-              AcademicCatalog.mcqBatchMatches(doc.data(), batchName),
-        )
+        .where((doc) => AcademicCatalog.mcqBatchMatches(doc.data(), batchName))
         .toList();
 
     var appeared = await _loadAppearedMcqResults(classTests, mobile);
@@ -587,6 +586,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         "student-dashboard-mcq-tests-full:$className:$batchName",
         () => FirebaseFirestore.instance
             .collection("mcq_tests")
+            .where("class", isEqualTo: className)
             .where("status", isEqualTo: "released")
             .orderBy("scheduledAt", descending: true)
             .limit(QueryLimits.studentMcqTests)
@@ -595,9 +595,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       );
       classTests = fallbackSnap.docs
           .where(
-            (doc) =>
-                AcademicCatalog.mcqTargetClass(doc.data()) == className &&
-                AcademicCatalog.mcqBatchMatches(doc.data(), batchName),
+            (doc) => AcademicCatalog.mcqBatchMatches(doc.data(), batchName),
           )
           .toList();
       appeared = await _loadAppearedMcqResults(classTests, mobile);
@@ -763,6 +761,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
     final mcqFuture = FirebaseFirestore.instance
         .collection("mcq_tests")
+        .where("class", isEqualTo: className)
         .where("status", isEqualTo: "released")
         .orderBy("scheduledAt", descending: true)
         .limit(QueryLimits.studentDashboardMcqLookup)
@@ -814,7 +813,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
     final mcqSnap = await mcqFuture;
     final classMcqDocs = mcqSnap.docs
-        .where((doc) => AcademicCatalog.mcqTargetClass(doc.data()) == className)
+        .where((doc) => AcademicCatalog.mcqBatchMatches(doc.data(), batchName))
         .toList();
     final ownMcqPairs = await Future.wait(
       classMcqDocs.map((doc) async {
@@ -1826,6 +1825,20 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         "/student-fees",
                         userData,
                       ),
+                      _drawerItem(
+                        context,
+                        "QR & App Link",
+                        Icons.qr_code_2_rounded,
+                        "",
+                        userData,
+                        onTap: () {
+                          Navigator.pop(context);
+                          showCoachingQrDialog(
+                            context: context,
+                            branding: WhiteLabelConfig.current,
+                          );
+                        },
+                      ),
                     ],
                   ),
                   _drawerSection(
@@ -1897,8 +1910,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
     String title,
     IconData icon,
     String route,
-    Map<String, dynamic> userData,
-  ) {
+    Map<String, dynamic> userData, {
+    VoidCallback? onTap,
+  }) {
     return ListTile(
       dense: true,
       minLeadingWidth: 0,
@@ -1925,10 +1939,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
         color: Color(0xFF9AA3B2),
         size: 20,
       ),
-      onTap: () {
-        Navigator.pop(context);
-        Navigator.pushNamed(context, route, arguments: userData);
-      },
+      onTap:
+          onTap ??
+          () {
+            Navigator.pop(context);
+            Navigator.pushNamed(context, route, arguments: userData);
+          },
     );
   }
 

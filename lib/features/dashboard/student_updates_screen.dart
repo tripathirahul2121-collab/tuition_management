@@ -37,6 +37,18 @@ class StudentUpdatesScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: _updatesStream(className),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  "Could not fetch announcements. Please try again shortly.",
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -68,6 +80,7 @@ class StudentUpdatesScreen extends StatelessWidget {
               final target =
                   data["target"]?.toString() ??
                   AcademicCatalog.allClassesTarget;
+              final isMcqUpdate = data["type"]?.toString() == "mcq_test";
 
               return Card(
                 elevation: 4,
@@ -107,6 +120,21 @@ class StudentUpdatesScreen extends StatelessWidget {
                         label: Text(AcademicCatalog.classLabel(target)),
                         visualDensity: VisualDensity.compact,
                       ),
+                      if (isMcqUpdate) ...[
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton.icon(
+                            onPressed: () => Navigator.pushNamed(
+                              context,
+                              "/student-mcq-tests",
+                              arguments: userData,
+                            ),
+                            icon: const Icon(Icons.quiz_rounded, size: 18),
+                            label: const Text("View Test"),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

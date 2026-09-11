@@ -24,6 +24,14 @@ void main() {
   });
 
   group('batch matching', () {
+    test('only regular batch is selectable for new workflows', () {
+      expect(AcademicCatalog.activeBatchValues, [AcademicCatalog.regularBatch]);
+      expect(
+        AcademicCatalog.batchValues,
+        contains(AcademicCatalog.homeTuitionBatch),
+      );
+    });
+
     test('home tuition MCQ updates do not match regular batch', () {
       expect(
         AcademicCatalog.updateBatchMatches({

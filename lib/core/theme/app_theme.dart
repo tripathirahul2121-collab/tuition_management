@@ -6,7 +6,7 @@ class AppTheme {
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
 
-    colorScheme: const ColorScheme(
+    colorScheme: ColorScheme(
       brightness: Brightness.light,
       primary: AppColors.primary,
       onPrimary: Colors.white,
@@ -20,7 +20,13 @@ class AppTheme {
 
     scaffoldBackgroundColor: AppColors.background,
 
-    appBarTheme: const AppBarTheme(elevation: 0, centerTitle: true),
+    appBarTheme: AppBarTheme(
+      elevation: 0,
+      centerTitle: true,
+      backgroundColor: AppColors.surface,
+      foregroundColor: AppColors.textPrimary,
+      surfaceTintColor: Colors.transparent,
+    ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -46,7 +52,7 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     ),
 
-    textTheme: const TextTheme(
+    textTheme: TextTheme(
       headlineLarge: AppTextStyles.title,
       headlineMedium: AppTextStyles.heading,
       bodyMedium: AppTextStyles.body,

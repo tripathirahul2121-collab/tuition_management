@@ -108,6 +108,7 @@ class _StudentMCQTestsScreenState extends State<StudentMCQTestsScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection("mcq_tests")
+            .where("class", isEqualTo: className)
             .where("status", isEqualTo: "released")
             .orderBy("scheduledAt", descending: true)
             .limit(QueryLimits.studentMcqTests)
@@ -139,8 +140,7 @@ class _StudentMCQTestsScreenState extends State<StudentMCQTestsScreen> {
 
               for (final doc in snapshot.data!.docs) {
                 final data = doc.data() as Map<String, dynamic>;
-                if (AcademicCatalog.mcqTargetClass(data) == className &&
-                    AcademicCatalog.mcqBatchMatches(data, batchName)) {
+                if (AcademicCatalog.mcqBatchMatches(data, batchName)) {
                   docsById[doc.id] = doc;
                 }
               }

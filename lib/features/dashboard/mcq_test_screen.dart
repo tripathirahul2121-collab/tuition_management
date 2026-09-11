@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/constants/query_limits.dart';
 import '../../core/constants/academic_catalog.dart';
+import '../../core/text/scientific_text_tools.dart';
 import 'mcq_result_utils.dart';
 
 class MCQTestScreen extends StatefulWidget {
@@ -24,9 +25,7 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
   final List<_QuestionInput> _questions = [_QuestionInput()];
 
   String _selectedClass = AcademicCatalog.classValues.first;
-  String _targetBatch = AcademicCatalog.regularBatch;
   String _timingMode = "perQuestion";
-  String _testLocation = "tuition";
   DateTime _scheduledAt = DateTime.now().add(const Duration(minutes: 5));
   bool _negativeEnabled = false;
   bool _saving = false;
@@ -166,14 +165,14 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
     final data = <String, dynamic>{
       "chapterName": chapter,
       "class": targetClass,
-      "targetBatch": _targetBatch,
+      "targetBatch": AcademicCatalog.regularBatch,
       "status": _editingTestId == null ? "draft" : FieldValue.delete(),
       "totalMarks": marksPerQuestion * questions.length,
       "marksPerQuestion": marksPerQuestion,
       "negativeMarkingEnabled": _negativeEnabled,
       "negativeMarksPerQuestion": negativeMarks,
       "timingMode": _timingMode,
-      "testLocation": _testLocation,
+      "testLocation": "tuition",
       "secondsPerQuestion": secondsPerQuestion ?? 0,
       "totalTimeMinutes": totalTime,
       "scheduledAt": Timestamp.fromDate(_scheduledAt),
@@ -319,9 +318,7 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
     _secondsPerQuestionController.text = "10";
     _totalTimeController.clear();
     _selectedClass = AcademicCatalog.classValues.first;
-    _targetBatch = AcademicCatalog.regularBatch;
     _timingMode = "perQuestion";
-    _testLocation = "tuition";
     _negativeEnabled = false;
     _editingTestId = null;
     _templateSourceId = null;
@@ -350,13 +347,9 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
       data,
       fallback: AcademicCatalog.classValues.first,
     );
-    _targetBatch = AcademicCatalog.mcqTargetBatch(data);
     _timingMode = data["timingMode"]?.toString() == "totalOnly"
         ? "totalOnly"
         : "perQuestion";
-    _testLocation = data["testLocation"]?.toString() == "home"
-        ? "home"
-        : "tuition";
     _negativeEnabled = data["negativeMarkingEnabled"] == true;
     _marksPerQuestionController.text = _formatNumber(
       double.tryParse(data["marksPerQuestion"]?.toString() ?? "") ?? 1,
@@ -402,13 +395,9 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
       data,
       fallback: AcademicCatalog.classValues.first,
     );
-    _targetBatch = AcademicCatalog.mcqTargetBatch(data);
     _timingMode = data["timingMode"]?.toString() == "totalOnly"
         ? "totalOnly"
         : "perQuestion";
-    _testLocation = data["testLocation"]?.toString() == "home"
-        ? "home"
-        : "tuition";
     _negativeEnabled = data["negativeMarkingEnabled"] == true;
     _marksPerQuestionController.text = _formatNumber(
       double.tryParse(data["marksPerQuestion"]?.toString() ?? "") ?? 1,
@@ -515,63 +504,7 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SegmentedButton<String>(
-                            segments: const [
-                              ButtonSegment(
-                                value: "tuition",
-                                icon: Icon(Icons.apartment),
-                                label: Text("At tuition"),
-                              ),
-                              ButtonSegment(
-                                value: "home",
-                                icon: Icon(Icons.home_outlined),
-                                label: Text("At home"),
-                              ),
-                            ],
-                            selected: {_testLocation},
-                            onSelectionChanged: (value) {
-                              _testLocation = value.first;
-                              _targetBatch = _testLocation == "home"
-                                  ? AcademicCatalog.homeTuitionBatch
-                                  : AcademicCatalog.regularBatch;
-                              refresh();
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _testLocation == "home"
-                                ? "Starts automatically at the scheduled time."
-                                : "Students start it manually after the scheduled time.",
-                            style: TextStyle(
-                              color: Colors.blueGrey.shade700,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            initialValue: _targetBatch,
-                            decoration: _decoration(
-                              "Target batch",
-                              Icons.groups_2,
-                            ),
-                            items: AcademicCatalog.batchValues
-                                .map(
-                                  (value) => DropdownMenuItem(
-                                    value: value,
-                                    child: Text(
-                                      AcademicCatalog.batchLabel(value),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              _targetBatch = AcademicCatalog.normalizeBatch(
-                                value,
-                              );
-                              refresh();
-                            },
-                          ),
+                          const _RegularBatchNotice(),
                           const SizedBox(height: 10),
                           DropdownButtonFormField<String>(
                             initialValue: _selectedClass,
@@ -1116,10 +1049,10 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
       "updatedAt": FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    await FirebaseFirestore.instance.collection("updates").add({
-      "title": "MCQ Test Released",
+    await FirebaseFirestore.instance.collection("updates").doc("mcq_$id").set({
+      "title": "New MCQ Test Available",
       "message":
-          "$chapter test is scheduled for ${DateFormat("dd MMM yyyy, hh:mm a").format(scheduledAt)}.",
+          "$chapter test is available for ${AcademicCatalog.classLabel(target)} • ${AcademicCatalog.batchLabel(targetBatch)}.",
       "target": target,
       "targetLabel": AcademicCatalog.classLabel(target),
       "targetBatch": targetBatch,
@@ -1127,8 +1060,13 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
       "scheduledAt": Timestamp.now(),
       "type": "mcq_test",
       "testId": id,
+      "questionCount": mcqQuestionsFrom(data).length,
+      "releaseTimeLabel": DateFormat(
+        "dd MMM yyyy, hh:mm a",
+      ).format(scheduledAt),
       "createdAt": FieldValue.serverTimestamp(),
-    });
+      "updatedAt": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     if (!mounted) return;
     _showSnack(
@@ -1965,45 +1903,87 @@ class MathTextField extends StatefulWidget {
 }
 
 class _MathTextFieldState extends State<MathTextField> {
-  static const _symbols = [
-    "²",
-    "³",
+  static const _scriptSymbols = ["₂", "₃", "₄", "²", "³", "⁺", "⁻"];
+  static const _chemistrySymbols = [
+    "₀",
+    "₁",
+    "₂",
+    "₃",
+    "₄",
+    "₅",
+    "₆",
+    "₇",
+    "₈",
+    "₉",
+    "⁺",
+    "⁻",
+    "→",
+    "⇌",
+  ];
+  static const _mathSymbols = [
     "√",
     "∛",
     "π",
-    "θ",
-    "α",
-    "β",
-    "γ",
-    "Δ",
-    "∑",
-    "∫",
     "∞",
-    "≤",
-    "≥",
-    "≠",
     "±",
     "×",
     "÷",
-    "°",
-    "→",
+    "≤",
+    "≥",
+    "≠",
+    "Σ",
     "½",
     "¼",
   ];
+  static const _greekSymbols = [
+    "α",
+    "β",
+    "γ",
+    "δ",
+    "θ",
+    "λ",
+    "μ",
+    "π",
+    "σ",
+    "Ω",
+    "Δ",
+  ];
 
   bool _showToolbar = false;
+  ScientificScriptMode _mode = ScientificScriptMode.normal;
 
   void _insert(String value) {
+    insertScientificText(widget.controller, value, mode: _mode);
+  }
+
+  void _convertSelection(ScientificScriptMode mode) {
+    convertSelectedScientificText(widget.controller, mode);
+  }
+
+  void _convertFormula() {
     final text = widget.controller.text;
     final selection = widget.controller.selection;
-    final start = selection.isValid ? selection.start : text.length;
-    final end = selection.isValid ? selection.end : text.length;
-    final nextText = text.replaceRange(start, end, value);
-    final cursor = start + value.length;
+    if (selection.isValid && !selection.isCollapsed) {
+      final start = selection.start;
+      final end = selection.end;
+      final replacement = convertFormulaDigitsToSubscript(
+        text.substring(start, end),
+      );
+      widget.controller.value = TextEditingValue(
+        text: text.replaceRange(start, end, replacement),
+        selection: TextSelection(
+          baseOffset: start,
+          extentOffset: start + replacement.length,
+        ),
+      );
+      return;
+    }
 
     widget.controller.value = TextEditingValue(
-      text: nextText,
-      selection: TextSelection.collapsed(offset: cursor),
+      text: convertFormulaDigitsToSubscript(text),
+      selection: TextSelection.collapsed(
+        offset: convertFormulaDigitsToSubscript(text).length,
+      ),
     );
   }
 
@@ -2016,13 +1996,14 @@ class _MathTextFieldState extends State<MathTextField> {
           controller: widget.controller,
           minLines: widget.minLines,
           maxLines: widget.maxLines,
+          inputFormatters: [ScientificScriptInputFormatter(_mode)],
           textInputAction: widget.maxLines > 1
               ? TextInputAction.newline
               : TextInputAction.next,
           decoration: InputDecoration(
             labelText: widget.label,
             suffixIcon: IconButton(
-              tooltip: "Math symbols",
+              tooltip: "Scientific input",
               onPressed: () => setState(() => _showToolbar = !_showToolbar),
               icon: Icon(
                 Icons.functions,
@@ -2046,40 +2027,171 @@ class _MathTextFieldState extends State<MathTextField> {
                       border: Border.all(color: const Color(0xFFBFDBFE)),
                     ),
                     child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: _symbols.map((symbol) {
-                        return InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: () => _insert(symbol),
-                          child: Container(
-                            height: 34,
-                            width: 38,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: Colors.black.withValues(alpha: 0.06),
-                              ),
-                            ),
-                            child: Text(
-                              symbol,
-                              style: const TextStyle(
-                                color: Color(0xFF1E3A8A),
-                                fontSize: 17,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _scriptModeButton(
+                          "Normal",
+                          ScientificScriptMode.normal,
+                        ),
+                        _scriptModeButton(
+                          "Subscript",
+                          ScientificScriptMode.subscript,
+                        ),
+                        _scriptModeButton(
+                          "Superscript",
+                          ScientificScriptMode.superscript,
+                        ),
+                        _toolbarAction("x₂", () {
+                          _convertSelection(ScientificScriptMode.subscript);
+                        }),
+                        _toolbarAction("x²", () {
+                          _convertSelection(ScientificScriptMode.superscript);
+                        }),
+                        _toolbarAction("Formula", _convertFormula),
+                        _symbolGroup("Scripts", _scriptSymbols),
+                        _symbolGroup("Chemistry", _chemistrySymbols),
+                        _symbolGroup("Math", _mathSymbols),
+                        _symbolGroup("Greek", _greekSymbols),
+                      ],
                     ),
                   ),
                 )
               : const SizedBox.shrink(),
         ),
       ],
+    );
+  }
+
+  Widget _scriptModeButton(String label, ScientificScriptMode mode) {
+    final active = _mode == mode;
+    return ActionChip(
+      label: Text(label),
+      avatar: Icon(
+        active ? Icons.check_circle_rounded : Icons.text_fields_rounded,
+        size: 17,
+      ),
+      backgroundColor: active ? const Color(0xFFDBEAFE) : Colors.white,
+      side: BorderSide(
+        color: active
+            ? const Color(0xFF2563EB)
+            : Colors.black.withValues(alpha: 0.08),
+      ),
+      onPressed: () => setState(() => _mode = mode),
+    );
+  }
+
+  Widget _toolbarAction(String label, VoidCallback onTap) {
+    return ActionChip(
+      label: Text(label),
+      backgroundColor: Colors.white,
+      side: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+      onPressed: onTap,
+    );
+  }
+
+  Widget _symbolGroup(String label, List<String> symbols) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 76,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF1E3A8A),
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          ...symbols.map((symbol) {
+            return InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => _insert(symbol),
+              child: Container(
+                height: 34,
+                width: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.06),
+                  ),
+                ),
+                child: Text(
+                  symbol,
+                  style: const TextStyle(
+                    color: Color(0xFF1E3A8A),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _RegularBatchNotice extends StatelessWidget {
+  const _RegularBatchNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBFDBFE)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.groups_2_outlined,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Regular Batch",
+                  style: TextStyle(
+                    color: Color(0xFF111827),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  "Released tests are available to Regular Batch students automatically.",
+                  style: TextStyle(
+                    color: Colors.blueGrey.shade700,
+                    fontWeight: FontWeight.w600,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

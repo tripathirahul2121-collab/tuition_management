@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'core/config/app_branding.dart';
 import 'core/routing/app_router.dart';
+import 'core/theme/app_theme.dart';
 
 class TuitionApp extends StatelessWidget {
   const TuitionApp({super.key});
@@ -8,8 +10,8 @@ class TuitionApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Tuition',
-      theme: ThemeData(useMaterial3: true),
+      title: WhiteLabelConfig.current.instituteShortName,
+      theme: AppTheme.lightTheme,
 
       // ✅ Start app from Splash Screen
       initialRoute: '/',

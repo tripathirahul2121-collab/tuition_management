@@ -255,20 +255,7 @@ class _GeneratePasswordScreenState
                 }).toList(),
                 onChanged: (value) {
                   selectedClass = value ?? "";
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: selectedBatch,
-                decoration: fieldDecoration("Batch", Icons.groups),
-                items: AcademicCatalog.batchValues.map((value) {
-                  return DropdownMenuItem(
-                    value: value,
-                    child: Text(AcademicCatalog.batchLabel(value)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  selectedBatch = AcademicCatalog.normalizeBatch(value);
+                  selectedBatch = AcademicCatalog.regularBatch;
                 },
               ),
             ],

@@ -21,7 +21,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final passwordController = TextEditingController();
 
   String selectedClass = "";
-  String selectedBatch = AcademicCatalog.regularBatch;
 
   //////////////////////////////////////////////////////
   /// SNACKBAR
@@ -178,7 +177,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       final allowedBatch = AcademicCatalog.normalizeBatch(
         pendingDoc.data()?["batch"]?.toString(),
       );
-
       if (storedPassword != password) {
         _showSnack("Wrong password ❌");
         return;
@@ -198,8 +196,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         return;
       }
 
-      if (role == "student" && allowedBatch != selectedBatch) {
-        _showSnack("Select the batch assigned while generating password.");
+      if (role == "student" && allowedBatch != AcademicCatalog.regularBatch) {
+        _showSnack(
+          "This password was generated for a legacy batch. Ask admin to create a new student password.",
+        );
         return;
       }
 
@@ -212,7 +212,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         "mobile": mobile,
         "school": school,
         "class": role == "student" ? selectedClass : "",
-        "batch": role == "student" ? selectedBatch : "",
+        "batch": role == "student" ? AcademicCatalog.regularBatch : "",
         "role": role,
         "password": password,
         "active": true,
@@ -224,7 +224,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           mobile: mobile,
           name: name,
           userClass: selectedClass,
-          userBatch: selectedBatch,
+          userBatch: AcademicCatalog.regularBatch,
         );
       }
 
@@ -315,8 +315,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 _field("School Name", schoolController),
                 const SizedBox(height: 16),
                 _classDropdown(),
-                const SizedBox(height: 16),
-                _batchDropdown(),
               ],
 
               const SizedBox(height: 16),
@@ -400,27 +398,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ],
       onChanged: (value) {
         selectedClass = value ?? "";
-      },
-    );
-  }
-
-  Widget _batchDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: selectedBatch,
-      decoration: InputDecoration(
-        hintText: "Select Batch",
-        filled: true,
-        fillColor: Colors.grey.shade50,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      items: AcademicCatalog.batchValues.map((value) {
-        return DropdownMenuItem(
-          value: value,
-          child: Text(AcademicCatalog.batchLabel(value)),
-        );
-      }).toList(),
-      onChanged: (value) {
-        selectedBatch = AcademicCatalog.normalizeBatch(value);
       },
     );
   }

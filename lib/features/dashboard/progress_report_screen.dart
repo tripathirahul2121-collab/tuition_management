@@ -368,30 +368,6 @@ class _ClassProgressScreenState extends State<ClassProgressScreen> {
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: DropdownButtonFormField<String>(
-              initialValue: selectedBatch,
-              decoration: const InputDecoration(labelText: "Batch"),
-              items: AcademicCatalog.batchValues.map((value) {
-                return DropdownMenuItem(
-                  value: value,
-                  child: Text(AcademicCatalog.batchLabel(value)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() {
-                  selectedBatch = AcademicCatalog.normalizeBatch(value);
-                  marksControllers.clear();
-                  absentMap.clear();
-                  feedbackMap.clear();
-                  feedbackTypeMap.clear();
-                });
-              },
-            ),
-          ),
-
           Flexible(
             fit: FlexFit.loose,
             child: SingleChildScrollView(

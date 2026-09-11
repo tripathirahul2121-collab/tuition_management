@@ -10,6 +10,7 @@ class AcademicCatalog {
   static const homeTuitionBatch = 'home_tuition';
 
   static const classValues = ['5', '6', '7', '8', '9', '10', '11', '12'];
+  static const activeBatchValues = [regularBatch];
   static const batchValues = [regularBatch, homeTuitionBatch];
 
   static const updateTargets = [allClassesTarget, ...classValues];

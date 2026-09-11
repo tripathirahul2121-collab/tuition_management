@@ -301,26 +301,6 @@ class _PerformanceAnalysisScreenState extends State<PerformanceAnalysisScreen> {
 
                 const SizedBox(height: 12),
 
-                DropdownButtonFormField<String>(
-                  initialValue: selectedBatch,
-                  decoration: _inputDecoration("Batch"),
-                  items: AcademicCatalog.batchValues.map((value) {
-                    return DropdownMenuItem(
-                      value: value,
-                      child: Text(AcademicCatalog.batchLabel(value)),
-                    );
-                  }).toList(),
-                  onChanged: (v) {
-                    if (v != null) {
-                      setState(() {
-                        selectedBatch = AcademicCatalog.normalizeBatch(v);
-                      });
-                    }
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
                 StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                   stream: _customSubjectsStream(),
                   builder: (context, snapshot) {

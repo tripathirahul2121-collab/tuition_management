@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/academic_catalog.dart';
+import '../../core/config/app_branding.dart';
+import 'admin_dashboard_preferences.dart';
 import '../auth/presentation/auth_controller.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -342,6 +344,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               _SettingsSection(
+                icon: Icons.dashboard_customize_outlined,
+                title: "Dashboard Customization",
+                subtitle: "Choose what appears on the Admin Dashboard.",
+                child: const _DashboardPreferenceSettings(),
+              ),
+              const SizedBox(height: 14),
+              _SettingsSection(
                 icon: Icons.cleaning_services_outlined,
                 title: "Session End",
                 subtitle: "Clear academic records before a fresh session.",
@@ -481,6 +490,154 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _DashboardPreferenceSettings extends StatelessWidget {
+  const _DashboardPreferenceSettings();
+
+  @override
+  Widget build(BuildContext context) {
+    final branding = WhiteLabelConfig.current;
+    return StreamBuilder<AdminDashboardPreferences>(
+      stream: AdminDashboardPreferences.stream(),
+      initialData: AdminDashboardPreferences.defaults,
+      builder: (context, snapshot) {
+        final preferences = snapshot.data ?? AdminDashboardPreferences.defaults;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _PreferenceGroupLabel("OVERVIEW", color: branding.primaryColor),
+            _DashboardPreferenceSwitch(
+              title: "Students",
+              subtitle: "Show total and active student metrics",
+              value: preferences.showStudentOverview,
+              onChanged: (value) =>
+                  preferences.copyWith(showStudentOverview: value).save(),
+            ),
+            _DashboardPreferenceSwitch(
+              title: "Attendance",
+              subtitle: "Show today's marked attendance summary",
+              value: preferences.showAttendanceOverview,
+              onChanged: (value) =>
+                  preferences.copyWith(showAttendanceOverview: value).save(),
+            ),
+            _DashboardPreferenceSwitch(
+              title: "Teachers",
+              subtitle: "Show active teacher count and pending signups",
+              value: preferences.showTeacherOverview,
+              onChanged: (value) =>
+                  preferences.copyWith(showTeacherOverview: value).save(),
+            ),
+            const SizedBox(height: 12),
+            _PreferenceGroupLabel("ALERTS", color: branding.primaryColor),
+            _DashboardPreferenceSwitch(
+              title: "3-Day Absence",
+              subtitle:
+                  "Show students absent for 3 consecutive attendance days",
+              value: preferences.showConsecutiveAbsenceAlert,
+              onChanged: (value) => preferences
+                  .copyWith(showConsecutiveAbsenceAlert: value)
+                  .save(),
+            ),
+            _DashboardPreferenceSwitch(
+              title: "Pending Fees",
+              subtitle: "Show outstanding fee metric and alert",
+              value: preferences.showPendingFees,
+              onChanged: (value) =>
+                  preferences.copyWith(showPendingFees: value).save(),
+            ),
+            const SizedBox(height: 12),
+            _PreferenceGroupLabel("CONTENT", color: branding.primaryColor),
+            _DashboardPreferenceSwitch(
+              title: "QR & App Link",
+              subtitle: "Show public app sharing controls on dashboard",
+              value: preferences.showQrAndAppLink,
+              onChanged: (value) =>
+                  preferences.copyWith(showQrAndAppLink: value).save(),
+            ),
+            _DashboardPreferenceSwitch(
+              title: "Quick Actions",
+              subtitle: "Show compact admin shortcuts",
+              value: preferences.showQuickActions,
+              onChanged: (value) =>
+                  preferences.copyWith(showQuickActions: value).save(),
+            ),
+            _DashboardPreferenceSwitch(
+              title: "Updates",
+              subtitle: "Show the updates management section",
+              value: preferences.showUpdates,
+              onChanged: (value) =>
+                  preferences.copyWith(showUpdates: value).save(),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: AdminDashboardPreferences.reset,
+                icon: const Icon(Icons.restart_alt_rounded),
+                label: const Text("Reset Dashboard to Default"),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PreferenceGroupLabel extends StatelessWidget {
+  const _PreferenceGroupLabel(this.label, {required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardPreferenceSwitch extends StatelessWidget {
+  const _DashboardPreferenceSwitch({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+      ),
+      child: SwitchListTile(
+        value: value,
+        onChanged: onChanged,
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        subtitle: Text(subtitle),
       ),
     );
   }
