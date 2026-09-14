@@ -244,7 +244,11 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
       }),
     );
     final appearedMcqs = ownResultPairs
-        .where((pair) => pair.resultDoc.exists)
+        .where(
+          (pair) =>
+              pair.resultDoc.exists &&
+              isMeritMcqResult(pair.resultDoc.data() ?? {}),
+        )
         .toList();
     final rankingSnaps = await Future.wait(
       appearedMcqs.map(
@@ -263,7 +267,9 @@ class _StudentReportCardScreenState extends State<StudentReportCardScreen> {
       final ownResult = appearedMcqs[i].resultDoc.data() ?? {};
       final data = testDoc.data();
       final resultsSnap = rankingSnaps[i];
-      final resultDocs = resultsSnap.docs;
+      final resultDocs = resultsSnap.docs
+          .where((resultDoc) => isMeritMcqResult(resultDoc.data()))
+          .toList();
       final computedOwnResult = computeMcqResult(data, ownResult);
 
       final ranking =

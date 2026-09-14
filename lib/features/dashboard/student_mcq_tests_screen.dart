@@ -348,6 +348,7 @@ class _StudentTestCardState extends State<_StudentTestCard> {
                 privateAttemptEndsAt.isAfter(_now) &&
                 !submitted;
             final canStartNow = privateAttemptActive || (canStart && !isEnded);
+            final canPracticeAfterEnd = isEnded && !privateAttemptActive;
 
             return AnimatedContainer(
               duration: const Duration(milliseconds: 220),
@@ -523,19 +524,21 @@ class _StudentTestCardState extends State<_StudentTestCard> {
                               child: FilledButton.icon(
                                 onPressed: privateAttemptActive
                                     ? () => widget.onStart(privateAttemptEndsAt)
+                                    : canPracticeAfterEnd
+                                    ? widget.onPractice
                                     : null,
                                 icon: Icon(
                                   privateAttemptActive
                                       ? Icons.play_arrow
                                       : isEnded
-                                      ? Icons.lock_clock
+                                      ? Icons.replay
                                       : Icons.timer,
                                 ),
                                 label: Text(
                                   privateAttemptActive
                                       ? "Start Special Attempt"
                                       : isEnded
-                                      ? "Test time ended"
+                                      ? "Practice Test"
                                       : "Starting now...",
                                 ),
                               ),
@@ -551,17 +554,19 @@ class _StudentTestCardState extends State<_StudentTestCard> {
                               child: FilledButton.icon(
                                 onPressed: canStartNow
                                     ? () => widget.onStart(privateAttemptEndsAt)
+                                    : canPracticeAfterEnd
+                                    ? widget.onPractice
                                     : null,
                                 icon: Icon(
                                   isEnded && !privateAttemptActive
-                                      ? Icons.lock_clock
+                                      ? Icons.replay
                                       : Icons.play_arrow,
                                 ),
                                 label: Text(
                                   privateAttemptActive
                                       ? "Start Special Attempt"
                                       : isEnded
-                                      ? "Test time ended"
+                                      ? "Practice Test"
                                       : "Start Test",
                                 ),
                               ),
@@ -1168,9 +1173,22 @@ class _TestRunnerState extends State<_TestRunner> with WidgetsBindingObserver {
           ? Timestamp.now()
           : FieldValue.serverTimestamp(),
       "practiceOnly": widget.practiceMode,
+      "countsForMerit": !widget.practiceMode,
+      "attemptType": widget.practiceMode ? "practice" : "official",
     };
 
     if (widget.practiceMode) {
+      unawaited(() async {
+        try {
+          await testRef.collection("practice_results").add({
+            ...resultData,
+            "sourceResultDoc": mobile,
+            "createdAt": FieldValue.serverTimestamp(),
+          });
+        } catch (error) {
+          debugPrint("MCQ practice result sync failed: $error");
+        }
+      }());
       if (!mounted) return;
       setState(() {
         _practiceFinalResult = resultData;
@@ -2666,10 +2684,15 @@ class _MeritList extends StatelessWidget {
         if (snapshot.hasError) return const SizedBox.shrink();
         if (!snapshot.hasData) return const LinearProgressIndicator();
 
-        final results = snapshot.data!.docs.map((doc) {
-          final resultData = doc.data();
-          return computeMcqResult(testData, resultData);
-        }).toList()..sort(compareMcqComputedResults);
+        final results =
+            snapshot.data!.docs
+                .where((doc) => isMeritMcqResult(doc.data()))
+                .map((doc) {
+                  final resultData = doc.data();
+                  return computeMcqResult(testData, resultData);
+                })
+                .toList()
+              ..sort(compareMcqComputedResults);
 
         if (results.isEmpty) return const SizedBox.shrink();
 

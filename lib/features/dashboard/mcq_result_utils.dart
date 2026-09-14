@@ -87,6 +87,12 @@ class McqReviewQuestion {
   final int? selectedIndex;
 }
 
+bool isMeritMcqResult(Map<String, dynamic> resultData) {
+  return resultData["practiceOnly"] != true &&
+      resultData["countsForMerit"] != false &&
+      resultData["attemptType"]?.toString() != "practice";
+}
+
 McqComputedResult computeMcqResult(
   Map<String, dynamic> testData,
   Map<String, dynamic> resultData,
@@ -187,6 +193,7 @@ Future<List<TuitionTopperEntry>> loadTuitionToppers() async {
 
       final results =
           resultsSnap.docs
+              .where((doc) => isMeritMcqResult(doc.data()))
               .map(
                 (doc) => (
                   docId: doc.id,

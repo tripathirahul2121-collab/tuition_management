@@ -1120,6 +1120,7 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
 
                   final results = snapshot.hasData
                       ? (snapshot.data!.docs
+                            .where((doc) => isMeritMcqResult(doc.data()))
                             .map((doc) => computeMcqResult(data, doc.data()))
                             .toList()
                           ..sort(compareMcqComputedResults))
@@ -1313,7 +1314,10 @@ class _MCQTestScreenState extends State<MCQTestScreen> {
           .doc(id)
           .collection("results")
           .get();
-      final submittedMobiles = resultsSnap.docs.map((doc) => doc.id).toSet();
+      final submittedMobiles = resultsSnap.docs
+          .where((doc) => isMeritMcqResult(doc.data()))
+          .map((doc) => doc.id)
+          .toSet();
 
       return studentsSnap.docs
           .where((doc) {

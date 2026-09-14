@@ -149,6 +149,7 @@ class _CurrentStarsScreenState extends State<CurrentStarsScreen> {
                 .get();
             final results =
                 resultsSnap.docs
+                    .where((doc) => isMeritMcqResult(doc.data()))
                     .map((doc) {
                       final result = computeMcqResult(testData, doc.data());
                       final mobile = result.mobile.isEmpty

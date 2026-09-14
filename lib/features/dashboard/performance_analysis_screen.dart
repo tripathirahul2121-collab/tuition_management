@@ -634,13 +634,22 @@ class _PerformanceAnalysisScreenState extends State<PerformanceAnalysisScreen> {
                             return const LinearProgressIndicator();
                           }
 
-                          final results = resultSnap.data!.docs.map((
-                            resultDoc,
-                          ) {
-                            final resultData =
-                                resultDoc.data() as Map<String, dynamic>;
-                            return computeMcqResult(data, resultData);
-                          }).toList()..sort(compareMcqComputedResults);
+                          final results =
+                              resultSnap.data!.docs
+                                  .where((resultDoc) {
+                                    final resultData =
+                                        resultDoc.data()
+                                            as Map<String, dynamic>;
+                                    return isMeritMcqResult(resultData);
+                                  })
+                                  .map((resultDoc) {
+                                    final resultData =
+                                        resultDoc.data()
+                                            as Map<String, dynamic>;
+                                    return computeMcqResult(data, resultData);
+                                  })
+                                  .toList()
+                                ..sort(compareMcqComputedResults);
                           final appeared = results.length;
                           final average = appeared == 0
                               ? 0.0

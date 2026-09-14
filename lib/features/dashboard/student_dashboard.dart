@@ -618,6 +618,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     if (resultsSnap == null) return latest;
 
     final ranking = resultsSnap.docs
+        .where((doc) => isMeritMcqResult(doc.data()))
         .map((doc) => computeMcqResult(latestTestData, doc.data()))
         .toList();
     final rankIndex = ranking.indexWhere((entry) => entry.mobile == mobile);
@@ -646,6 +647,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         resultPairs.where((pair) => pair.resultDoc.exists).map((pair) {
           final testData = pair.testDoc.data();
           final resultData = pair.resultDoc.data() ?? {};
+          if (!isMeritMcqResult(resultData)) return null;
           final computed = computeMcqResult(testData, resultData);
 
           return _LatestMcqResult(
@@ -661,7 +663,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ),
             testReference: pair.testDoc.reference,
           );
-        }),
+        }).whereType<_LatestMcqResult>(),
       );
 
       if (appeared.isNotEmpty) break;
@@ -825,7 +827,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
       }),
     );
     final appearedMcqs = ownMcqPairs
-        .where((pair) => pair.resultDoc.exists)
+        .where(
+          (pair) =>
+              pair.resultDoc.exists &&
+              isMeritMcqResult(pair.resultDoc.data() ?? {}),
+        )
         .toList();
 
     for (var i = 0; i < appearedMcqs.length; i++) {
@@ -1969,6 +1975,20 @@ class _StudentDashboardState extends State<StudentDashboard> {
         scrolledUnderElevation: 0,
         backgroundColor: const Color(0xFFF3F5F9),
         foregroundColor: const Color(0xFF141414),
+        actions: [
+          Tooltip(
+            message: "Logout",
+            child: IconButton(
+              onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                context,
+                "/login",
+                (_) => false,
+              ),
+              icon: const Icon(Icons.logout_rounded),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
       ),
       body: SafeArea(
         child: RefreshIndicator(

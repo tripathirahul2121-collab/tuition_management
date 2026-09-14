@@ -859,7 +859,7 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _NeedsAttentionSection extends StatelessWidget {
+class _NeedsAttentionSection extends StatefulWidget {
   const _NeedsAttentionSection({
     required this.branding,
     required this.preferences,
@@ -873,49 +873,57 @@ class _NeedsAttentionSection extends StatelessWidget {
   final bool loading;
 
   @override
+  State<_NeedsAttentionSection> createState() => _NeedsAttentionSectionState();
+}
+
+class _NeedsAttentionSectionState extends State<_NeedsAttentionSection> {
+  bool _expanded = true;
+
+  @override
   Widget build(BuildContext context) {
     final cards = <Widget>[
-      if (preferences.showConsecutiveAbsenceAlert)
+      if (widget.preferences.showConsecutiveAbsenceAlert)
         _AttentionCard(
-          branding: branding,
+          branding: widget.branding,
           icon: Icons.warning_amber_rounded,
           title: 'Consecutive Absence',
-          loading: loading,
-          value: summary == null || summary!.absenceError != null
+          loading: widget.loading,
+          value: widget.summary == null || widget.summary!.absenceError != null
               ? null
-              : '${summary!.absenceAlerts.length}',
-          body: summary?.absenceError != null
+              : '${widget.summary!.absenceAlerts.length}',
+          body: widget.summary?.absenceError != null
               ? 'Unable to load consecutive absence alerts.'
-              : summary == null
+              : widget.summary == null
               ? 'Checking recorded attendance days.'
-              : summary!.absenceAlerts.isEmpty
+              : widget.summary!.absenceAlerts.isEmpty
               ? 'No students have been absent for 3 consecutive attendance days.'
-              : '${summary!.absenceAlerts.length} students have been absent for 3+ recorded attendance days.',
+              : '${widget.summary!.absenceAlerts.length} students have been absent for 3+ recorded attendance days.',
           actionLabel: 'View Students',
-          onTap: summary == null || summary!.absenceError != null
+          onTap: widget.summary == null || widget.summary!.absenceError != null
               ? null
               : () => _showAbsenceDetails(
                   context,
-                  branding,
-                  summary!.absenceAlerts,
+                  widget.branding,
+                  widget.summary!.absenceAlerts,
                 ),
         ),
-      if (preferences.showPendingFees)
+      if (widget.preferences.showPendingFees)
         _AttentionCard(
-          branding: branding,
+          branding: widget.branding,
           icon: Icons.currency_rupee_rounded,
           title: 'Pending Fees',
-          loading: loading,
-          value: summary == null || summary!.pendingFeesError != null
+          loading: widget.loading,
+          value:
+              widget.summary == null || widget.summary!.pendingFeesError != null
               ? null
-              : _money(summary!.pendingFees.outstandingAmount),
-          body: summary?.pendingFeesError != null
+              : _money(widget.summary!.pendingFees.outstandingAmount),
+          body: widget.summary?.pendingFeesError != null
               ? 'Unable to load pending fee details.'
-              : summary == null
+              : widget.summary == null
               ? 'Checking active student fee records.'
-              : summary!.pendingFees.pendingStudents == 0
+              : widget.summary!.pendingFees.pendingStudents == 0
               ? 'All fees are up to date for this month.'
-              : '${summary!.pendingFees.pendingStudents} students have pending fee payments.',
+              : '${widget.summary!.pendingFees.pendingStudents} students have pending fee payments.',
           actionLabel: 'View Fees',
           onTap: () => Navigator.pushNamed(context, '/fees'),
         ),
@@ -926,23 +934,74 @@ class _NeedsAttentionSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(title: 'Needs Attention', branding: branding),
-        const SizedBox(height: 10),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final twoColumns = constraints.maxWidth >= 760 && cards.length > 1;
-            final cardWidth = twoColumns
-                ? (constraints.maxWidth - 12) / 2
-                : constraints.maxWidth;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (final card in cards)
-                  SizedBox(width: cardWidth, child: card),
-              ],
-            );
-          },
+        _CollapsibleSectionHeader(
+          title: 'Needs Attention',
+          branding: widget.branding,
+          expanded: _expanded,
+          onToggle: () => setState(() => _expanded = !_expanded),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: _expanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final twoColumns =
+                          constraints.maxWidth >= 760 && cards.length > 1;
+                      final cardWidth = twoColumns
+                          ? (constraints.maxWidth - 12) / 2
+                          : constraints.maxWidth;
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          for (final card in cards)
+                            SizedBox(width: cardWidth, child: card),
+                        ],
+                      );
+                    },
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+}
+
+class _CollapsibleSectionHeader extends StatelessWidget {
+  const _CollapsibleSectionHeader({
+    required this.title,
+    required this.branding,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  final String title;
+  final AppBranding branding;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SectionTitle(title: title, branding: branding),
+        ),
+        Tooltip(
+          message: expanded ? 'Collapse' : 'Expand',
+          child: IconButton.filledTonal(
+            onPressed: onToggle,
+            icon: AnimatedRotation(
+              turns: expanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: const Icon(Icons.keyboard_arrow_down_rounded),
+            ),
+          ),
         ),
       ],
     );
@@ -1169,13 +1228,21 @@ class _QuickActionLabel extends StatelessWidget {
   }
 }
 
-class _PublicAppLinkSection extends StatelessWidget {
+class _PublicAppLinkSection extends StatefulWidget {
   const _PublicAppLinkSection({required this.branding});
 
   final AppBranding branding;
 
   @override
+  State<_PublicAppLinkSection> createState() => _PublicAppLinkSectionState();
+}
+
+class _PublicAppLinkSectionState extends State<_PublicAppLinkSection> {
+  bool _expanded = true;
+
+  @override
   Widget build(BuildContext context) {
+    final branding = widget.branding;
     final uri = branding.publicAppUri;
     final url = uri?.toString() ?? 'Public app link is not configured';
 
@@ -1192,85 +1259,104 @@ class _PublicAppLinkSection extends StatelessWidget {
           ),
         ],
       ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 16,
-        runSpacing: 14,
+      child: Column(
         children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  height: 40,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.qr_code_2_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'QR & App Link',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        url,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.82),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
+          Row(
             children: [
-              _LightAdminButton(
-                icon: Icons.qr_code_rounded,
-                label: 'View QR',
-                onPressed: () =>
-                    showCoachingQrDialog(context: context, branding: branding),
+              Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.qr_code_2_rounded, color: Colors.white),
               ),
-              _LightAdminButton(
-                icon: Icons.copy_rounded,
-                label: 'Copy Link',
-                onPressed: () => copyPublicAppLink(context, branding),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'QR & App Link',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      url,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              _LightAdminButton(
-                icon: Icons.open_in_new_rounded,
-                label: 'Open',
-                onPressed: () => openPublicAppLink(context, branding),
-              ),
-              _LightAdminButton(
-                icon: Icons.ios_share_rounded,
-                label: 'Share',
-                onPressed: () => sharePublicAppLink(context, branding),
+              Tooltip(
+                message: _expanded ? 'Collapse' : 'Expand',
+                child: IconButton(
+                  onPressed: () => setState(() => _expanded = !_expanded),
+                  color: Colors.white,
+                  icon: AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 180),
+                    child: const Icon(Icons.keyboard_arrow_down_rounded),
+                  ),
+                ),
               ),
             ],
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: _expanded
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          _LightAdminButton(
+                            icon: Icons.qr_code_rounded,
+                            label: 'View QR',
+                            onPressed: () => showCoachingQrDialog(
+                              context: context,
+                              branding: branding,
+                            ),
+                          ),
+                          _LightAdminButton(
+                            icon: Icons.copy_rounded,
+                            label: 'Copy Link',
+                            onPressed: () =>
+                                copyPublicAppLink(context, branding),
+                          ),
+                          _LightAdminButton(
+                            icon: Icons.open_in_new_rounded,
+                            label: 'Open',
+                            onPressed: () =>
+                                openPublicAppLink(context, branding),
+                          ),
+                          _LightAdminButton(
+                            icon: Icons.ios_share_rounded,
+                            label: 'Share',
+                            onPressed: () =>
+                                sharePublicAppLink(context, branding),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : const SizedBox(width: double.infinity),
           ),
         ],
       ),
@@ -1293,14 +1379,15 @@ class _LightAdminButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return FilledButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
       style: FilledButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF111827),
-        minimumSize: const Size(112, 42),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+        minimumSize: const Size(126, 46),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
+      icon: Icon(icon, size: 19),
+      label: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
     );
   }
 }
